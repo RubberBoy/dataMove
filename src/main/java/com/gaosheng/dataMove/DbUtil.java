@@ -32,7 +32,7 @@ public class DbUtil {
      *  true : 只输出，不执行实际的数据库更新
      *  false : 执行数据库更新
      */
-    public static boolean isTest = true;
+    public static boolean isTest = false;
 
     public DbUtil (Connection connection) {
         this.connection = connection;

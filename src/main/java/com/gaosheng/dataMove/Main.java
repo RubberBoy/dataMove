@@ -110,7 +110,10 @@ public class Main {
         DbUtil dbUtil = new DbUtil(tyxlSduConn);
 
         Set<String> clearedTables = new HashSet<String>();
-        dbUtil.clearTable("pe_semester","tyxlsdu",clearedTables);
+        String[] tables = new String[]{"pe_student","sso_user"};
+        for (String table : tables) {
+            dbUtil.clearTable(table,"tyxlsdu",clearedTables);
+        }
 
         try {
             dbUtil.close();

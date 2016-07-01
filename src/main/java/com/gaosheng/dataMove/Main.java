@@ -63,11 +63,7 @@ public class Main {
 
         dbUtil.executeDirSql(new File("D:\\山大数据迁移\\预处理sql"));
 
-        try {
-            dbUtil.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        dbUtil.close();
     }
 
     /**
@@ -78,11 +74,7 @@ public class Main {
 
         dbUtil.executeSqlFile(new File("D:\\山大数据迁移\\新平台表结构修改.sql"));
 
-        try {
-            dbUtil.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        dbUtil.close();
     }
 
     /**
@@ -94,11 +86,7 @@ public class Main {
 
         dbUtil.executeDirSql(new File("D:\\山大数据迁移\\迁移sql"));
 
-        try {
-            dbUtil.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        dbUtil.close();
     }
 
     /**
@@ -115,11 +103,7 @@ public class Main {
             dbUtil.clearTable(table,"tyxlsdu",clearedTables);
         }
 
-        try {
-            dbUtil.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        dbUtil.close();
     }
 
     private static void analysisRef() throws SQLException {

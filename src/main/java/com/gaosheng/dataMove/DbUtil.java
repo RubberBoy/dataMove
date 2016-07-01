@@ -1,6 +1,7 @@
 package com.gaosheng.dataMove;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -157,13 +159,7 @@ public class DbUtil {
                     logger.error("关闭文件失败",e);
                 }
             }
-            if (null != st) {
-                try {
-                    st.close();
-                } catch (SQLException e) {
-                    logger.error("关闭Statement失败",e);
-                }
-            }
+            this.close(st,null);
         }
         return true;
     }
@@ -209,13 +205,7 @@ public class DbUtil {
         } catch (Exception e) {
             logger.error("清空表 " + tableName + " 失败",e);
         } finally {
-          if (statement != null) {
-              try {
-                  statement.close();
-              } catch (SQLException e) {
-                  logger.error("关闭Statement失败",e);
-              }
-          }
+            this.close(statement,null);
         }
 
         return true;
@@ -247,6 +237,8 @@ public class DbUtil {
         sql.append("   and pkey.table_name = upper('" + tableName + "')");
         sql.append("   and re.constraint_type = 'R'                    ");
         sql.append(" order by re.r_constraint_name                     ");
+
+        logger.debug("获取引用信息sql : {}",sql.toString());
 
         Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql.toString());
@@ -290,9 +282,107 @@ public class DbUtil {
         return 0;
     }
 
-    public void close() throws SQLException {
-        if (connection != null) {
-            connection.close();
+    public static List<ColumnMeta> getColumnMetaList(ResultSet rs) throws SQLException{
+        List<ColumnMeta> list = new ArrayList<ColumnMeta>();
+        ResultSetMetaData rsmd = rs.getMetaData();
+        int cols = rsmd.getColumnCount();
+        for (int i = 1; i <= cols; i++){
+            list.add(new ColumnMeta(
+                    rsmd.getColumnName(i),
+                    rsmd.getColumnTypeName(i)));
+        }
+        return list;
+    }
+
+    /**
+     * 获取sequence下一个值
+     * @param sequnceName
+     * @return
+     */
+    public long getSequenceNextVal(String sequnceName) {
+        return this.getSequenceVal(sequnceName,"nextval");
+    }
+
+    /**
+     * 获取sequence当前值
+     * @param sequnceName
+     * @return
+     */
+    public long getSequenceCurVal(String sequnceName) {
+        return this.getSequenceVal(sequnceName,"currval");
+    }
+
+    private long getSequenceVal(String sequnceName,String valType) {
+        Statement statement = null;
+        ResultSet rs = null;
+        try {
+            statement = connection.createStatement();
+            rs = statement.executeQuery("select " + sequnceName + "." + valType + " from dual");
+            while (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }finally {
+            this.close(statement,rs);
+        }
+        return 0;
+    }
+
+    /**
+     * 获取创建表sql
+     * @param tableName
+     * @param newTableName  新表名，可为空
+     * @return
+     */
+    public String getCreateTableSql(String tableName,String newTableName) {
+        StringBuffer createSql = new StringBuffer("create table " +
+                (StringUtils.isEmpty(newTableName) ? tableName : newTableName) + " (");
+
+        StringBuffer sql = new StringBuffer();
+        sql.append("select table_name, column_name, data_type, data_length, column_id ");
+        sql.append("  from user_tab_columns                                           ");
+        sql.append(" where table_name = '"+ tableName.toUpperCase()+"'                ");
+        sql.append(" order by column_id asc                                           ");
+
+        Statement statement = null;
+        ResultSet rs = null;
+        try {
+            statement = connection.createStatement();
+            rs = statement.executeQuery(sql.toString());
+
+            while (rs.next()) {
+                String columnName = rs.getString("column_name");
+                String dataType = rs.getString("data_type");
+                int dataLength = rs.getInt("data_length");
+                createSql.append(columnName + " " + dataType + "(" + dataLength + "),");
+            }
+            createSql.deleteCharAt(createSql.length() - 1);
+            createSql.append(")");
+        } catch (SQLException e) {
+            logger.error("获取列定义失败",e);
+        } finally {
+            this.close(statement,rs);
+        }
+        return createSql.toString().toLowerCase();
+    }
+
+    public void close(Statement statement,ResultSet rs) {
+        try {
+            if (null != rs) {rs.close();}
+            if (null != statement) {statement.close();}
+        } catch (SQLException e) {
+            logger.error("关闭数据库句柄失败",e);
+        }
+    }
+
+    public void close() {
+        try {
+            if (connection != null) {
+                connection.close();
+            }
+        } catch (SQLException e) {
+            logger.error("关闭连接失败",e);
         }
     }
 

@@ -9,10 +9,7 @@ import java.io.StringReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -29,9 +26,9 @@ public class DataMove {
 
 	public static void main(String[] args) {
 
-        tranfsTableData("ACTION_MENU_CONFIG",
+        tranfsTableData("ACTION_GRID_CONFIG",
                 null,
-                "FK_ACTION_GRID_CONFIG_ID in ('tch_paperGrade','tch_paperTitle','appointTeaStu','peSelectedTitle','prSelectedTitleTea','graduatePaperStatistic','listApointTeaStu','paperScoreManager','apointTeaStuList','prSelectedTitleAdmin')");
+                null);
     }
 	
 	public static void tranfsTableData(String table,String columStr,String condition){
@@ -64,12 +61,12 @@ public class DataMove {
 			}
 
             fetchDataRs = fromStatement.executeQuery(searchSql);
-			StringBuilder nameSql = new StringBuilder("insert into " + table +"(");
-			StringBuilder values = new StringBuilder();
-			List<String> list = getMetaList(fetchDataRs);
-			List<String> typeList = getMetaTypeList(fetchDataRs);
-			for (int j =0;j<list.size();j++){
-				nameSql.append(list.get(j)+",");
+            List<ColumnMeta> columnMetas = DbUtil.getColumnMetaList(fetchDataRs);
+
+            StringBuilder nameSql = new StringBuilder("insert into " + table +"(");
+            StringBuilder values = new StringBuilder();
+			for (int j =0;j<columnMetas.size();j++){
+				nameSql.append(columnMetas.get(j).name+",");
 				values.append("?,");
 			}
 			nameSql.deleteCharAt(nameSql.length()-1);
@@ -83,10 +80,11 @@ public class DataMove {
 			toStatement = toConn.prepareStatement(nameSql.toString());
 			
 			while(fetchDataRs.next()){
-				for (int j = 0; j < list.size();j++){
-					if(typeList.get(j).equals("DATE")){
+				for (int j = 0; j < columnMetas.size();j++){
+                    ColumnMeta columnMeta = columnMetas.get(j);
+					if(columnMeta.type.equals("DATE")){
 						toStatement.setDate(j+1,fetchDataRs.getDate(j+1));
-					} else if(typeList.get(j).equals("LONG") || typeList.get(j).equals("CLOB")){
+					} else if(columnMeta.type.equals("LONG") || columnMeta.type.equals("CLOB")){
 						String temp = fetchDataRs.getString(j+1);
 						if ( temp != null) {
 							Reader reader = new StringReader(temp);
@@ -134,24 +132,5 @@ public class DataMove {
 			}
 		}
 	}
-	
-	public static List<String> getMetaList(ResultSet rs) throws SQLException{
-		List<String> list = new ArrayList<String>();
-		ResultSetMetaData rsmd = rs.getMetaData();
-		int cols = rsmd.getColumnCount();
-		for (int i = 1; i <= cols; i++){
-			list.add(rsmd.getColumnName(i));
-		}
-		return list;
-	}
-	
-	public static List<String> getMetaTypeList(ResultSet rs) throws SQLException{
-		List<String> list = new ArrayList<String>();
-		ResultSetMetaData rsmd = rs.getMetaData();
-		int cols = rsmd.getColumnCount();
-		for (int i = 1; i <= cols; i++){
-			list.add(rsmd.getColumnTypeName(i));
-		}
-		return list;
-	}
+
 }

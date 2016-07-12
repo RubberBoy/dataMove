@@ -83,7 +83,7 @@ public class DataMove {
 				for (int j = 0; j < columnMetas.size();j++){
                     ColumnMeta columnMeta = columnMetas.get(j);
 					if(columnMeta.type.equals("DATE")){
-						toStatement.setDate(j+1,fetchDataRs.getDate(j+1));
+						toStatement.setTimestamp(j+1,fetchDataRs.getTimestamp(j+1));
 					} else if(columnMeta.type.equals("LONG") || columnMeta.type.equals("CLOB")){
 						String temp = fetchDataRs.getString(j+1);
 						if ( temp != null) {
